@@ -91,20 +91,22 @@ final class ViewMendManager implements ViewMendManagerContract
             );
         }
 
-        $token = $this->token($name, $config);
-        $integrationId = $this->integrationId($name, $config);
+        $token = $this->token($name, $config['token'] ?? null);
+        $siteTracker = $config['site_tracker'] ?? null;
+        $factory = $this->factory;
 
         return new ViewMendConnection(
             name: $name,
-            clientResolver: fn (): ViewMend => $this->factory->make($name, $token),
-            siteTrackerIntegrationId: $integrationId,
+            clientResolver: static fn (): ViewMend => $factory->make($name, $token),
+            siteTrackerIntegrationIdResolver: static fn (): string => self::integrationId(
+                $name,
+                $siteTracker,
+            ),
         );
     }
 
-    /** @param array<mixed> $config */
-    private function token(string $name, array $config): string
+    private function token(string $name, #[\SensitiveParameter] mixed $token): string
     {
-        $token = $config['token'] ?? null;
         if ($token === null || (is_string($token) && trim($token) === '')) {
             throw MissingTokenException::forConnection($name);
         }
@@ -126,10 +128,8 @@ final class ViewMendManager implements ViewMendManagerContract
         return $token;
     }
 
-    /** @param array<mixed> $config */
-    private function integrationId(string $name, array $config): string
+    private static function integrationId(string $name, mixed $siteTracker): string
     {
-        $siteTracker = $config['site_tracker'] ?? null;
         if ($siteTracker === null) {
             throw MissingIntegrationIdException::forConnection($name);
         }

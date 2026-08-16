@@ -48,11 +48,20 @@ jobs:
       - name: Run tests
         run: composer test
 
-      - name: Verify package discovery and cached configuration
+      - name: Verify Testbench command registration
+        shell: bash
         run: |
+          set -euo pipefail
+          cleanup() {
+            vendor/bin/testbench config:clear --no-interaction >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+          cleanup
           vendor/bin/testbench package:discover --no-interaction
-          vendor/bin/testbench config:cache --no-interaction
-          vendor/bin/testbench list --raw | grep '^viewmend:deployment'
+          vendor/bin/testbench list --raw | grep -q '^viewmend:deployment'
+
+      - name: Verify package discovery and cached configuration in a Laravel consumer
+        run: composer consumer:smoke
 
       - name: Audit production dependencies
         run: composer audit --locked --no-dev
@@ -103,6 +112,47 @@ jobs:
           --with "orchestra/testbench:${{ matrix.testbench }}"
           --with-all-dependencies
           --prefer-dist
+          --no-audit
+          --no-interaction
+          --no-progress
+
+      - name: Run tests
+        run: composer test
+
+  lowest:
+    name: Lowest dependencies (PHP 8.3, Laravel ${{ matrix.laravel }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - laravel: "12"
+            testbench: "^10.0"
+          - laravel: "13"
+            testbench: "^11.0"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          coverage: none
+          tools: composer:v2
+
+      - name: Resolve lowest compatible dependencies
+        run: >-
+          composer update
+          --with "laravel/framework:^${{ matrix.laravel }}.0"
+          --with "orchestra/testbench:${{ matrix.testbench }}"
+          --with-all-dependencies
+          --prefer-lowest
+          --prefer-dist
+          --no-audit
           --no-interaction
           --no-progress
 

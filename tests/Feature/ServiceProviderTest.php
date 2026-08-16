@@ -82,7 +82,7 @@ final class ServiceProviderTest extends TestCase
         self::assertSame(0, $factory->http->requests);
     }
 
-    public function testCachedConfigurationShapeCanResolveWithoutEnvironmentAccess(): void
+    public function testConfigurationArrayCanBeExportedAndRehydrated(): void
     {
         $exported = var_export(self::validConfig(), true);
         $cached = eval(sprintf('return %s;', $exported));

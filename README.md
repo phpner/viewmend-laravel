@@ -15,14 +15,19 @@ Site Tracker is the first available module. Learn more about [ViewMend Site Trac
 composer require viewmend/laravel
 ```
 
-Laravel discovers the service provider automatically. Configure the default connection in your environment:
+Laravel discovers the service provider automatically. Every connection needs an API token:
 
 ```dotenv
 VIEWMEND_API_TOKEN=your-api-token
+```
+
+Site Tracker calls, including the deployment command, additionally need a Site Tracker integration ID:
+
+```dotenv
 VIEWMEND_SITE_TRACKER_INTEGRATION_ID=your-integration-id
 ```
 
-The optional `VIEWMEND_CONNECTION` selects a different configured default connection.
+The integration ID is not required for general access through `$viewMend->client()` or `$viewMend->connection('name')->client()`. The optional `VIEWMEND_CONNECTION` selects a different configured default connection.
 
 ## Quick start
 
@@ -124,6 +129,8 @@ $result = $viewMend
     ->contentUpdate('content-123', 'Pricing updated')
     ->send();
 ```
+
+The `site_tracker` block is optional until `siteTracker()` or `siteTrackerIntegrationId()` is called on that connection. A token-only connection can still expose the shared SDK client for other ViewMend modules.
 
 Environment access stays in the configuration file, so the package works with `php artisan config:cache`.
 

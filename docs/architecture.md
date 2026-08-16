@@ -10,7 +10,9 @@ The package deliberately has no routes, controllers, views, migrations, frontend
 
 `ViewMendServiceProvider` merges configuration during `register()`, registers singleton bindings, publishes configuration during `boot()`, and registers the deployment command only in console applications. None of those operations create an SDK client or perform I/O.
 
-`ViewMendManagerContract` is the container-facing API. `ViewMendManager` validates one named connection when it is requested and caches a `ViewMendConnection` per name. The connection lazily creates one SDK `ViewMend` client on its first `client()` or `siteTracker()` call. Calling an SDK event builder remains side-effect free until `send()`.
+`ViewMendManagerContract` is the container-facing API. `ViewMendManager` validates the selected connection and its token when it is requested, then caches a `ViewMendConnection` per name. The connection lazily creates one SDK `ViewMend` client on its first `client()` or successful module access. Calling an SDK event builder remains side-effect free until `send()`.
+
+Site Tracker configuration is a separate lazy concern. A connection resolves and validates `site_tracker.integration_id` only when `siteTrackerIntegrationId()` or `siteTracker()` is called. Token-only connections therefore remain valid shared ViewMend clients for other current or future public SDK modules. A missing or malformed Site Tracker block fails before constructing a Site Tracker client or performing I/O.
 
 The connection wrapper exists only to bind a configured Site Tracker integration ID to a named SDK client. From `siteTracker()` onward, callers receive the public SDK types `SiteTrackerClient`, `Events`, `PendingEvent`, and `DeliveryResult`; the adapter does not wrap the fluent event API.
 
@@ -32,9 +34,11 @@ The supported structure is intentionally small:
 ]
 ```
 
+The connection token is required. The nested `site_tracker` block is optional for general `client()` access and required only for Site Tracker operations on that connection.
+
 The adapter does not expose an API base URL or retry options because its standard factory cannot honestly apply those settings through `ViewMend::client()`. Environment lookups exist only in `config/viewmend.php`, which makes the resolved array compatible with Laravel configuration caching.
 
-Connection names, tokens, nested Site Tracker configuration, and integration IDs are validated before client use. Package exceptions identify only the relevant key and connection. Manager and connection debug output omit configuration and client internals; SDK token objects provide their own redacted debug representation.
+Connection names and tokens are validated when the connection is selected. Nested Site Tracker configuration and integration IDs are validated only at the Site Tracker boundary. Package exceptions identify only the relevant key and connection. Manager and connection debug output omit configuration, resolvers, tokens, client internals, and the integration ID value; SDK token objects provide their own redacted debug representation.
 
 ## Client factory extension point
 
@@ -77,7 +81,7 @@ Production dependencies are limited to:
 - `illuminate/contracts`, `illuminate/support`, and `illuminate/console` for the container, provider/facade, and command integration;
 - `guzzlehttp/psr7`, already present in the SDK transport graph, as the declared PSR-17/PSR-7 implementation used by the public testing fake.
 
-The package does not require `laravel/framework` in production. Testbench supplies complete Laravel 12/13 applications for development tests.
+The package does not require `laravel/framework` in production. Testbench supplies complete Laravel 12/13 applications for development tests. A disposable native Laravel consumer smoke test separately verifies Composer auto-discovery and real cached-configuration bootstrapping without a network request; Testbench's custom configuration bootstrapper is not used as evidence for Laravel `config:cache` behavior.
 
 ## Possible SDK enhancement
 

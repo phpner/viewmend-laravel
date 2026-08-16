@@ -12,3 +12,8 @@ All notable changes to this project will be documented in this file. The format 
 - Synchronous `viewmend:deployment` command with stable event IDs and pipeline-safe exit codes.
 - Network-free Laravel testing fake backed by the public SDK PSR-18 seam.
 - PHPUnit/Testbench coverage, maximum-level Larastan analysis, PSR-12 checks, and CI compatibility matrix.
+
+### Changed
+
+- General SDK clients now require only a connection token; Site Tracker configuration is resolved lazily at the Site Tracker boundary.
+- CI now verifies cached configuration in a disposable native Laravel consumer and exercises the lowest compatible dependency sets for Laravel 12 and 13.

@@ -12,11 +12,16 @@ final class ViewMendConnection
 {
     private ?ViewMend $client = null;
 
-    /** @param Closure(): ViewMend $clientResolver */
+    private ?string $siteTrackerIntegrationId = null;
+
+    /**
+     * @param Closure(): ViewMend $clientResolver
+     * @param Closure(): string $siteTrackerIntegrationIdResolver
+     */
     public function __construct(
         private readonly string $name,
         private readonly Closure $clientResolver,
-        private readonly string $siteTrackerIntegrationId,
+        private readonly Closure $siteTrackerIntegrationIdResolver,
     ) {
     }
 
@@ -32,12 +37,14 @@ final class ViewMendConnection
 
     public function siteTrackerIntegrationId(): string
     {
-        return $this->siteTrackerIntegrationId;
+        return $this->siteTrackerIntegrationId ??= ($this->siteTrackerIntegrationIdResolver)();
     }
 
     public function siteTracker(): SiteTrackerClient
     {
-        return $this->client()->siteTracker($this->siteTrackerIntegrationId);
+        $integrationId = $this->siteTrackerIntegrationId();
+
+        return $this->client()->siteTracker($integrationId);
     }
 
     /** @return array{name: string, client: string, siteTrackerIntegrationId: string} */
@@ -46,7 +53,9 @@ final class ViewMendConnection
         return [
             'name' => $this->name,
             'client' => $this->client === null ? 'not resolved' : ViewMend::class,
-            'siteTrackerIntegrationId' => $this->siteTrackerIntegrationId,
+            'siteTrackerIntegrationId' => $this->siteTrackerIntegrationId === null
+                ? 'not resolved'
+                : 'resolved',
         ];
     }
 }

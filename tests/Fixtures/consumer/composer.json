@@ -1,0 +1,29 @@
+{
+    "name": "viewmend/laravel-consumer-smoke",
+    "description": "Minimal Laravel consumer used to verify the ViewMend package lifecycle.",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "php": ">=8.3",
+        "laravel/framework": "^13.0",
+        "viewmend/laravel": "@dev"
+    },
+    "scripts": {
+        "post-autoload-dump": [
+            "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
+            "@php artisan package:discover --no-interaction"
+        ]
+    },
+    "extra": {
+        "laravel": {
+            "dont-discover": []
+        }
+    },
+    "config": {
+        "allow-plugins": false,
+        "preferred-install": "dist",
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

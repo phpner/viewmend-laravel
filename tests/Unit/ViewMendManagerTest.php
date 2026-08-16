@@ -16,6 +16,122 @@ use ViewMend\Laravel\ViewMendManager;
 
 final class ViewMendManagerTest extends TestCase
 {
+    public function testTokenOnlyDefaultConnectionCanReturnACachedSdkClient(): void
+    {
+        $factory = new CountingClientFactory();
+        $manager = new ViewMendManager(self::tokenOnlyConfig(), $factory);
+
+        $connection = $manager->connection();
+
+        self::assertSame([], $factory->connections);
+        self::assertSame($connection->client(), $connection->client());
+        self::assertSame($connection->client(), $manager->client());
+        self::assertSame(['default'], $factory->connections);
+        self::assertSame(0, $factory->http->requests);
+    }
+
+    public function testTokenOnlyNamedConnectionCanReturnACachedSdkClient(): void
+    {
+        $factory = new CountingClientFactory();
+        $manager = new ViewMendManager(self::tokenOnlyConfig(), $factory);
+
+        $connection = $manager->connection('secondary');
+
+        self::assertSame([], $factory->connections);
+        self::assertSame($connection->client(), $connection->client());
+        self::assertSame(['secondary'], $factory->connections);
+        self::assertSame(0, $factory->http->requests);
+    }
+
+    public function testTokenOnlyConnectionRequiresIntegrationOnlyWhenIntegrationIdIsRequested(): void
+    {
+        $factory = new CountingClientFactory();
+        $connection = (new ViewMendManager(self::tokenOnlyConfig(), $factory))->connection();
+
+        $connection->client();
+        self::assertSame(['default'], $factory->connections);
+
+        foreach ([$connection->siteTrackerIntegrationId(...), $connection->siteTracker(...)] as $resolve) {
+            try {
+                $resolve();
+                self::fail('Expected missing Site Tracker configuration to fail.');
+            } catch (MissingIntegrationIdException $exception) {
+                self::assertStringContainsString(
+                    'viewmend.connections.default.site_tracker.integration_id',
+                    $exception->getMessage(),
+                );
+            }
+        }
+
+        self::assertSame(['default'], $factory->connections);
+        self::assertSame(0, $factory->http->requests);
+    }
+
+    public function testTokenOnlyConnectionRequiresIntegrationBeforeConstructingSiteTrackerClient(): void
+    {
+        $factory = new CountingClientFactory();
+        $connection = (new ViewMendManager(self::tokenOnlyConfig(), $factory))->connection();
+
+        try {
+            $connection->siteTracker();
+            self::fail('Expected Site Tracker configuration resolution to fail.');
+        } catch (MissingIntegrationIdException $exception) {
+            self::assertStringContainsString(
+                'viewmend.connections.default.site_tracker.integration_id',
+                $exception->getMessage(),
+            );
+        }
+
+        self::assertSame([], $factory->connections);
+        self::assertSame(0, $factory->http->requests);
+    }
+
+    public function testMalformedSiteTrackerConfigurationIsLazyForBothAccessors(): void
+    {
+        $config = self::tokenOnlyConfig();
+        $config['connections']['default']['site_tracker'] = 'invalid';
+        $factory = new CountingClientFactory();
+        $connection = (new ViewMendManager($config, $factory))->connection();
+
+        $connection->client();
+        self::assertSame(['default'], $factory->connections);
+
+        try {
+            $connection->siteTrackerIntegrationId();
+            self::fail('Expected malformed Site Tracker configuration to fail.');
+        } catch (MalformedConfigurationException $exception) {
+            self::assertStringContainsString(
+                'viewmend.connections.default.site_tracker',
+                $exception->getMessage(),
+            );
+        }
+
+        try {
+            $connection->siteTracker();
+            self::fail('Expected malformed Site Tracker configuration to fail.');
+        } catch (MalformedConfigurationException $exception) {
+            self::assertStringContainsString(
+                'viewmend.connections.default.site_tracker',
+                $exception->getMessage(),
+            );
+        }
+
+        $freshFactory = new CountingClientFactory();
+        $fresh = (new ViewMendManager($config, $freshFactory))->connection();
+        try {
+            $fresh->siteTracker();
+            self::fail('Expected malformed Site Tracker configuration to fail.');
+        } catch (MalformedConfigurationException $exception) {
+            self::assertStringContainsString(
+                'viewmend.connections.default.site_tracker',
+                $exception->getMessage(),
+            );
+        }
+
+        self::assertSame([], $freshFactory->connections);
+        self::assertSame(0, $freshFactory->http->requests);
+    }
+
     public function testClientsAreConstructedLazilyAndCachedPerConnection(): void
     {
         $factory = new CountingClientFactory();
@@ -137,7 +253,7 @@ final class ViewMendManagerTest extends TestCase
         ];
         yield 'site tracker config is absent' => [
             ['default' => 'default', 'connections' => ['default' => ['token' => 'token']]],
-            static fn (ViewMendManager $manager) => $manager->connection(),
+            static fn (ViewMendManager $manager) => $manager->connection()->siteTrackerIntegrationId(),
             MissingIntegrationIdException::class,
             'viewmend.connections.default.site_tracker.integration_id',
         ];
@@ -146,25 +262,25 @@ final class ViewMendManagerTest extends TestCase
                 'token' => 'token',
                 'site_tracker' => 'invalid',
             ]]],
-            static fn (ViewMendManager $manager) => $manager->connection(),
+            static fn (ViewMendManager $manager) => $manager->connection()->siteTrackerIntegrationId(),
             MalformedConfigurationException::class,
             'viewmend.connections.default.site_tracker',
         ];
         yield 'integration is absent' => [
             self::connectionConfig('token', null),
-            static fn (ViewMendManager $manager) => $manager->connection(),
+            static fn (ViewMendManager $manager) => $manager->connection()->siteTrackerIntegrationId(),
             MissingIntegrationIdException::class,
             'viewmend.connections.default.site_tracker.integration_id',
         ];
         yield 'integration has wrong type' => [
             self::connectionConfig('token', 123),
-            static fn (ViewMendManager $manager) => $manager->connection(),
+            static fn (ViewMendManager $manager) => $manager->connection()->siteTrackerIntegrationId(),
             MalformedConfigurationException::class,
             'viewmend.connections.default.site_tracker.integration_id',
         ];
         yield 'integration has surrounding whitespace' => [
             self::connectionConfig('token', ' tracker-id'),
-            static fn (ViewMendManager $manager) => $manager->connection(),
+            static fn (ViewMendManager $manager) => $manager->connection()->siteTrackerIntegrationId(),
             MalformedConfigurationException::class,
             'viewmend.connections.default.site_tracker.integration_id',
         ];
@@ -221,6 +337,26 @@ final class ViewMendManagerTest extends TestCase
                     'token' => $token,
                     'site_tracker' => ['integration_id' => $integration],
                 ],
+            ],
+        ];
+    }
+
+    /**
+     * @return array{
+     *     default: string,
+     *     connections: array{
+     *         default: array{token: string},
+     *         secondary: array{token: string}
+     *     }
+     * }
+     */
+    private static function tokenOnlyConfig(): array
+    {
+        return [
+            'default' => 'default',
+            'connections' => [
+                'default' => ['token' => 'test-default-token'],
+                'secondary' => ['token' => 'test-secondary-token'],
             ],
         ];
     }
