@@ -1,0 +1,110 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Quality (PHP 8.5, Laravel 13)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer downloads
+        uses: actions/cache@v5
+        with:
+          path: ~/.composer/cache/files
+          key: ${{ runner.os }}-php-8.5-composer-${{ hashFiles('composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php-8.5-composer-
+
+      - name: Validate Composer metadata
+        run: composer validate --strict
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Check coding style
+        run: composer cs:check
+
+      - name: Run static analysis
+        run: composer analyse
+
+      - name: Run tests
+        run: composer test
+
+      - name: Verify package discovery and cached configuration
+        run: |
+          vendor/bin/testbench package:discover --no-interaction
+          vendor/bin/testbench config:cache --no-interaction
+          vendor/bin/testbench list --raw | grep '^viewmend:deployment'
+
+      - name: Audit production dependencies
+        run: composer audit --locked --no-dev
+
+  compatibility:
+    name: PHP ${{ matrix.php }} / Laravel ${{ matrix.laravel }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php: "8.3"
+            laravel: "12"
+            testbench: "^10.0"
+          - php: "8.4"
+            laravel: "12"
+            testbench: "^10.0"
+          - php: "8.5"
+            laravel: "12"
+            testbench: "^10.0"
+          - php: "8.3"
+            laravel: "13"
+            testbench: "^11.0"
+          - php: "8.4"
+            laravel: "13"
+            testbench: "^11.0"
+          - php: "8.5"
+            laravel: "13"
+            testbench: "^11.0"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          tools: composer:v2
+
+      - name: Resolve matrix dependencies
+        run: >-
+          composer update
+          --with "laravel/framework:^${{ matrix.laravel }}.0"
+          --with "orchestra/testbench:${{ matrix.testbench }}"
+          --with-all-dependencies
+          --prefer-dist
+          --no-interaction
+          --no-progress
+
+      - name: Run tests
+        run: composer test

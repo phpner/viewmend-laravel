@@ -1,0 +1,69 @@
+{
+    "name": "viewmend/laravel",
+    "description": "Official Laravel integration package for ViewMend APIs, with Site Tracker as the first available module.",
+    "homepage": "https://viewmend.com/",
+    "license": "MIT",
+    "type": "library",
+    "keywords": [
+        "deployment-monitoring",
+        "laravel",
+        "site-tracker",
+        "viewmend",
+        "website-monitoring"
+    ],
+    "support": {
+        "email": "support@viewmend.com",
+        "issues": "https://github.com/phpner/viewmend-laravel/issues",
+        "source": "https://github.com/phpner/viewmend-laravel"
+    },
+    "require": {
+        "php": ">=8.3",
+        "guzzlehttp/psr7": "^2.7",
+        "illuminate/console": "^12.0 || ^13.0",
+        "illuminate/contracts": "^12.0 || ^13.0",
+        "illuminate/support": "^12.0 || ^13.0",
+        "viewmend/sdk": "^1.0"
+    },
+    "require-dev": {
+        "larastan/larastan": "^3.10",
+        "orchestra/testbench": "^10.0 || ^11.0",
+        "phpunit/phpunit": "^12.5.8",
+        "squizlabs/php_codesniffer": "^4.0.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "ViewMend\\Laravel\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "ViewMend\\Laravel\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "analyse": "phpstan analyse --no-progress --debug --memory-limit=1G",
+        "cs:check": "phpcs",
+        "quality": [
+            "@composer validate --strict",
+            "@cs:check",
+            "@analyse",
+            "@test"
+        ]
+    },
+    "config": {
+        "allow-plugins": false,
+        "preferred-install": "dist",
+        "sort-packages": true
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "ViewMend\\Laravel\\ViewMendServiceProvider"
+            ],
+            "aliases": {
+                "ViewMend": "ViewMend\\Laravel\\Facades\\ViewMend"
+            }
+        }
+    }
+}
