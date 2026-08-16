@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-08-16
+
 ### Added
 
 - Laravel 12 and 13 package auto-discovery and configuration publishing.
