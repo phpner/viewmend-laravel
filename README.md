@@ -1,8 +1,12 @@
-# ViewMend for Laravel
+# ViewMend Laravel SDK
 
-The official Laravel integration for [ViewMend](https://viewmend.com/). This package adapts the framework-agnostic [`viewmend/sdk`](https://packagist.org/packages/viewmend/sdk) to Laravel with container bindings, named connections, a facade, an Artisan deployment command, and a network-free testing fake.
+The official Laravel SDK for the [ViewMend website monitoring platform](https://viewmend.com/). This package adapts the framework-agnostic [`viewmend/sdk`](https://packagist.org/packages/viewmend/sdk) to Laravel with container bindings, named connections, a facade, an Artisan command, and a network-free testing fake.
 
-Site Tracker is the first available module. Learn more about [ViewMend Site Tracker](https://viewmend.com/site-tracker).
+## Available modules
+
+### Site Tracker Events
+
+Site Tracker Events is the first available module. Laravel applications can report deployments, content updates, cache clears, and maintenance activity so ViewMend can connect those changes with subsequent website checks. Learn more about [ViewMend Site Tracker for website change monitoring](https://viewmend.com/site-tracker).
 
 ## Requirements
 

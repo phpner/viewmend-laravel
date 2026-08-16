@@ -1,14 +1,16 @@
 {
     "name": "viewmend/laravel",
-    "description": "Official Laravel integration package for ViewMend APIs, with Site Tracker as the first available module.",
+    "description": "Official Laravel SDK for ViewMend APIs, with framework integration and Site Tracker Events as the first module.",
     "homepage": "https://viewmend.com/",
     "license": "MIT",
     "type": "library",
     "keywords": [
         "deployment-monitoring",
         "laravel",
+        "laravel-sdk",
         "site-tracker",
         "viewmend",
+        "website-change-monitoring",
         "website-monitoring"
     ],
     "support": {
