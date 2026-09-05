@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file. The format 
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-09-05
+
 ### Added
 
 - Public `cron()` access through the manager contract, facade, fake, and named connections, without Site Tracker configuration.

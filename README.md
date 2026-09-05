@@ -40,6 +40,16 @@ VIEWMEND_SITE_TRACKER_INTEGRATION_ID=your-integration-id
 
 The integration ID is not required for Cron or general access through `$viewMend->client()` or `$viewMend->connection('name')->client()`. The optional `VIEWMEND_CONNECTION` selects a different configured default connection.
 
+### Upgrading from 1.x
+
+```bash
+composer require viewmend/laravel:^2.0 --with-all-dependencies
+```
+
+Version 2 requires `viewmend/sdk ^1.3`. If your application implements `ViewMendManagerContract`, add `cron(): ViewMend\Cron\CronClient`; the supplied manager and fake already implement it. `ClientFactoryContract` and existing event calls are unchanged. The fake's `assertNothingSent()` now checks every request, including reads.
+
+If you previously published `config/viewmend.php`, add `api_base_url` to the desired connections when using a custom API address, as shown under [named connections](#named-connections).
+
 ## Quick start
 
 Inject the package contract and use the public SDK builders directly:
