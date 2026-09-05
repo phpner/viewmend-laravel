@@ -128,6 +128,13 @@ final class ViewMendFake implements ViewMendManagerContract
 
     public function assertNothingSent(): void
     {
+        if ($this->events() !== []) {
+            throw new AssertionError('Unexpected ViewMend events were sent.');
+        }
+    }
+
+    public function assertNoRequestsSent(): void
+    {
         if ($this->requests() !== []) {
             throw new AssertionError('Unexpected ViewMend requests were sent.');
         }

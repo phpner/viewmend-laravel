@@ -26,7 +26,7 @@ $saved = $cron->current(); // RegistrationResult, or null if not registered
 $cron->disable();
 ```
 
-These are separate operations: call `register()` when saving settings, `current()` when loading them, and `disable()` when pausing the schedule. Each performs a request immediately. Creating the client with `cron()` performs no I/O. Dependency injection exposes the same API through `ViewMendManagerContract`.
+These are separate operations: call `register()` when saving settings, `current()` when loading them, and `disable()` when pausing the schedule. Each performs a request immediately. Creating the client with `cron()` performs no I/O. With an injected `ViewMendManagerContract`, use `$viewMend->connection()->cron()` or `$viewMend->connection('cron')->cron()`. The manager interface retains its three original methods; existing custom implementations need no new method.
 
 The application owns its callback route. Verify the exact request bytes with the public SDK:
 

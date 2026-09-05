@@ -7,6 +7,7 @@ namespace ViewMend\Laravel\Facades;
 use Illuminate\Contracts\Config\Repository as ConfigRepository;
 use Illuminate\Support\Facades\Facade;
 use LogicException;
+use ViewMend\Cron\CronClient;
 use ViewMend\Laravel\Contracts\ViewMendManagerContract;
 use ViewMend\Laravel\Testing\ViewMendFake;
 
@@ -14,12 +15,16 @@ use ViewMend\Laravel\Testing\ViewMendFake;
  * @method static \ViewMend\Laravel\ViewMendConnection connection(?string $name = null)
  * @method static \ViewMend\ViewMend client()
  * @method static \ViewMend\SiteTracker\SiteTrackerClient siteTracker()
- * @method static \ViewMend\Cron\CronClient cron()
  *
  * @see ViewMendManagerContract
  */
 final class ViewMend extends Facade
 {
+    public static function cron(): CronClient
+    {
+        return static::connection()->cron();
+    }
+
     public static function fake(): ViewMendFake
     {
         $app = static::getFacadeApplication();

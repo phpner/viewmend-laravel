@@ -12,7 +12,7 @@ Site Tracker includes event delivery, dashboard reads, and resource inventories.
 
 ### Cron
 
-Register, read, and disable a scheduled callback through `$viewMend->cron()` or a named connection. Callback verification uses the SDK's `verifyCallback()` with the original request headers and body. Cron needs its own connection token and does not require a Site Tracker integration ID. See [Cron integration](docs/cron.md).
+Register, read, and disable a scheduled callback through `ViewMend::cron()` or `$viewMend->connection()->cron()`. Callback verification uses the SDK's `verifyCallback()` with the original request headers and body. Cron needs its own connection token and does not require a Site Tracker integration ID. See [Cron integration](docs/cron.md).
 
 ## Requirements
 
@@ -40,13 +40,15 @@ VIEWMEND_SITE_TRACKER_INTEGRATION_ID=your-integration-id
 
 The integration ID is not required for Cron or general access through `$viewMend->client()` or `$viewMend->connection('name')->client()`. The optional `VIEWMEND_CONNECTION` selects a different configured default connection.
 
-### Upgrading from 1.x
+### Upgrading to 1.1
+
+The short-lived 2.0.0 release is withdrawn in favor of this compatible release. If you installed it, change your version constraint to `^1.1` using the command below.
 
 ```bash
-composer require viewmend/laravel:^2.0 --with-all-dependencies
+composer require viewmend/laravel:^1.1 --with-all-dependencies
 ```
 
-Version 2 requires `viewmend/sdk ^1.3`. If your application implements `ViewMendManagerContract`, add `cron(): ViewMend\Cron\CronClient`; the supplied manager and fake already implement it. `ClientFactoryContract` and existing event calls are unchanged. The fake's `assertNothingSent()` now checks every request, including reads.
+Version 1.1 requires `viewmend/sdk ^1.3` and preserves the 1.0 `ViewMendManagerContract` and `ClientFactoryContract`. Existing manager implementations and event calls need no changes. For Cron through dependency injection, use `$viewMend->connection()->cron()`. The fake's `assertNothingSent()` still checks events; use `assertNoRequestsSent()` to check every API request.
 
 If you previously published `config/viewmend.php`, add `api_base_url` to the desired connections when using a custom API address, as shown under [named connections](#named-connections).
 
@@ -221,7 +223,7 @@ $fake->assertRequestSent(fn (RecordedRequest $request): bool =>
     && $request->path === '/api/v1/cron/registration');
 ```
 
-`respondNext()` accepts a decoded JSON object and a 2xx or non-retryable 4xx status; use `respondNext(status: 204)` for Cron disable. Responses are consumed in order across non-event requests and connections. Unconfigured requests fail immediately. `requests()` contains method, path, query, JSON payload, and connection, without headers or tokens. `assertNothingSent()` checks all requests. Existing event assertions and `duplicateNext()` / `failNext()` remain event-specific and use a separate response queue.
+`respondNext()` accepts a decoded JSON object and a 2xx or non-retryable 4xx status; use `respondNext(status: 204)` for Cron disable. Responses are consumed in order across non-event requests and connections. Unconfigured requests fail immediately. `requests()` contains method, path, query, JSON payload, and connection, without headers or tokens. `assertNoRequestsSent()` checks all requests; `assertNothingSent()` checks only events. Existing event assertions and `duplicateNext()` / `failNext()` remain event-specific and use a separate response queue.
 
 ## Advanced usage
 

@@ -14,7 +14,11 @@ use ViewMend\Exception\UnexpectedResponseException;
 use ViewMend\Laravel\Contracts\ViewMendManagerContract;
 use ViewMend\Laravel\Facades\ViewMend;
 use ViewMend\Laravel\Testing\RecordedRequest;
+use ViewMend\Laravel\Testing\ViewMendFake;
 use ViewMend\Laravel\Tests\TestCase;
+use ViewMend\Laravel\ViewMendConnection;
+use ViewMend\SiteTracker\SiteTrackerClient;
+use ViewMend\ViewMend as SdkClient;
 
 final class ApiModulesTest extends TestCase
 {
@@ -35,9 +39,9 @@ final class ApiModulesTest extends TestCase
         self::assertInstanceOf(CronClient::class, ViewMend::cron());
         self::assertInstanceOf(
             CronClient::class,
-            $this->application()->make(ViewMendManagerContract::class)->cron(),
+            $this->application()->make(ViewMendManagerContract::class)->connection()->cron(),
         );
-        $fake->assertNothingSent();
+        $fake->assertNoRequestsSent();
         self::assertSame([], $fake->requests());
     }
 
@@ -116,13 +120,69 @@ final class ApiModulesTest extends TestCase
         }
     }
 
-    public function testAssertNothingSentIncludesReads(): void
+    public function testAssertNoRequestsSentIncludesReads(): void
     {
         $fake = ViewMend::fake()->respondNext(status: 404);
         ViewMend::cron()->current();
         $this->expectException(AssertionError::class);
 
+        $fake->assertNoRequestsSent();
+    }
+
+    public function testAssertNothingSentKeepsItsEventOnlyMeaningAfterACronRequest(): void
+    {
+        $fake = ViewMend::fake()->respondNext(status: 404);
+        ViewMend::cron()->current();
+
         $fake->assertNothingSent();
+        self::assertCount(1, $fake->requests());
+        self::assertSame([], $fake->events());
+    }
+
+    public function testAssertNothingSentStillRejectsEvents(): void
+    {
+        $fake = ViewMend::fake();
+        ViewMend::siteTracker()->events()->deployment('deploy-legacy', 'Deployed')->send();
+        $this->expectException(AssertionError::class);
+        $this->expectExceptionMessage('Unexpected ViewMend events were sent.');
+
+        $fake->assertNothingSent();
+    }
+
+    public function testLegacyManagerImplementationSupportsFacadeEventsAndCronWithoutANewMethod(): void
+    {
+        $fake = new ViewMendFake(self::validConfig());
+        $legacy = new class ($fake) implements ViewMendManagerContract {
+            public function __construct(private readonly ViewMendManagerContract $delegate)
+            {
+            }
+
+            public function connection(?string $name = null): ViewMendConnection
+            {
+                return $this->delegate->connection($name);
+            }
+
+            public function client(): SdkClient
+            {
+                return $this->delegate->client();
+            }
+
+            public function siteTracker(): SiteTrackerClient
+            {
+                return $this->delegate->siteTracker();
+            }
+        };
+        $this->application()->instance(ViewMendManagerContract::class, $legacy);
+        self::assertSame($legacy, ViewMend::getFacadeRoot());
+        self::assertSame($fake->client(), ViewMend::client());
+
+        ViewMend::siteTracker()->events()->deployment('deploy-legacy', 'Deployed')->send();
+        $fake->assertSent('deployment');
+
+        $fake->respondNext(status: 404);
+        self::assertNull(ViewMend::cron()->current());
+        $fake->assertRequestSent(static fn (RecordedRequest $request): bool =>
+            $request->connection === 'default' && $request->path === '/api/v1/cron/registration');
     }
 
     public function testApiResponseQueueDoesNotConsumeEventResponses(): void

@@ -74,7 +74,7 @@ final class SiteTrackerReadTest extends TestCase
             ViewMend::siteTracker()->dashboard(pageId: 'not-a-uuid');
             self::fail('An invalid page ID should fail SDK validation.');
         } catch (ValidationException) {
-            $fake->assertNothingSent();
+            $fake->assertNoRequestsSent();
             self::assertSame([], $fake->requests());
         }
     }
