@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace ViewMend\Laravel;
 
+use ViewMend\Cron\CronClient;
 use ViewMend\Laravel\Contracts\ClientFactoryContract;
 use ViewMend\Laravel\Contracts\ViewMendManagerContract;
 use ViewMend\Laravel\Exception\MalformedConfigurationException;
@@ -47,6 +48,11 @@ final class ViewMendManager implements ViewMendManagerContract
     public function client(): ViewMend
     {
         return $this->connection()->client();
+    }
+
+    public function cron(): CronClient
+    {
+        return $this->connection()->cron();
     }
 
     /** @return array{default: mixed, resolvedConnections: list<string>} */

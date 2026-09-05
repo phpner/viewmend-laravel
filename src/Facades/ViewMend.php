@@ -14,6 +14,7 @@ use ViewMend\Laravel\Testing\ViewMendFake;
  * @method static \ViewMend\Laravel\ViewMendConnection connection(?string $name = null)
  * @method static \ViewMend\ViewMend client()
  * @method static \ViewMend\SiteTracker\SiteTrackerClient siteTracker()
+ * @method static \ViewMend\Cron\CronClient cron()
  *
  * @see ViewMendManagerContract
  */

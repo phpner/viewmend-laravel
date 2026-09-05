@@ -29,6 +29,7 @@ final class DefaultConfigurationTest extends TestCase
         self::assertIsArray($connections);
         self::assertArrayHasKey('default', $connections);
         self::assertNull($config->get('viewmend.connections.default.token'));
+        self::assertNull($config->get('viewmend.connections.default.api_base_url'));
         self::assertNull($config->get('viewmend.connections.default.site_tracker.integration_id'));
     }
 }

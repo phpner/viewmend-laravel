@@ -40,7 +40,7 @@ final class PackageBoundariesTest extends TestCase
             self::fail('Expected Composer production requirements.');
         }
         self::assertArrayNotHasKey('laravel/framework', $require);
-        self::assertSame('^1.0', $require['viewmend/sdk'] ?? null);
+        self::assertSame('^1.3', $require['viewmend/sdk'] ?? null);
     }
 
     public function testSourceDoesNotUseSdkInternalApis(): void

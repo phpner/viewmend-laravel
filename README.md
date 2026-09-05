@@ -4,14 +4,21 @@ The official Laravel SDK for the [ViewMend website monitoring platform](https://
 
 ## Available modules
 
-### Site Tracker Events
+### Site Tracker
 
-Site Tracker Events is the first available module. Laravel applications can report deployments, content updates, cache clears, and maintenance activity so ViewMend can connect those changes with subsequent website checks. Learn more about [ViewMend Site Tracker for website change monitoring](https://viewmend.com/site-tracker).
+Site Tracker includes event delivery, dashboard reads, and resource inventories. Laravel applications can report deployments, content updates, cache clears, and maintenance activity so ViewMend can connect those changes with subsequent website checks. Learn more about [ViewMend Site Tracker for website change monitoring](https://viewmend.com/site-tracker).
+
+`siteTracker()->dashboard()` returns integration health, attention items, and page performance. `siteTracker()->resources()` returns a filtered, paginated resource inventory for a check. Both return the SDK's typed response objects and send a GET request immediately. See [dashboard and resource examples](docs/site-tracker.md).
+
+### Cron
+
+Register, read, and disable a scheduled callback through `$viewMend->cron()` or a named connection. Callback verification uses the SDK's `verifyCallback()` with the original request headers and body. Cron needs its own connection token and does not require a Site Tracker integration ID. See [Cron integration](docs/cron.md).
 
 ## Requirements
 
 - PHP 8.3, 8.4, or 8.5
 - Laravel 12 or 13
+- `viewmend/sdk ^1.3`
 
 ## Installation
 
@@ -19,19 +26,19 @@ Site Tracker Events is the first available module. Laravel applications can repo
 composer require viewmend/laravel
 ```
 
-Laravel discovers the service provider automatically. Every connection needs an API token:
+Laravel discovers the service provider automatically. Every connection needs an API token for the selected product:
 
 ```dotenv
 VIEWMEND_API_TOKEN=your-api-token
 ```
 
-Site Tracker calls, including the deployment command, additionally need a Site Tracker integration ID:
+Site Tracker calls, including dashboard/resource reads and the deployment command, additionally need a Site Tracker integration ID:
 
 ```dotenv
 VIEWMEND_SITE_TRACKER_INTEGRATION_ID=your-integration-id
 ```
 
-The integration ID is not required for general access through `$viewMend->client()` or `$viewMend->connection('name')->client()`. The optional `VIEWMEND_CONNECTION` selects a different configured default connection.
+The integration ID is not required for Cron or general access through `$viewMend->client()` or `$viewMend->connection('name')->client()`. The optional `VIEWMEND_CONNECTION` selects a different configured default connection.
 
 ## Quick start
 
@@ -136,6 +143,8 @@ $result = $viewMend
 
 The `site_tracker` block is optional until `siteTracker()` or `siteTrackerIntegrationId()` is called on that connection. A token-only connection can still expose the shared SDK client for other ViewMend modules.
 
+For a local or self-hosted API, set `VIEWMEND_API_BASE_URL=http://127.0.0.1:8079/api/v1`, or set `api_base_url` inside a named connection. Include the API prefix. An omitted or null value uses `https://viewmend.com/api/v1`. This setting is applied by the default client factory; a custom `ClientFactoryContract` implementation owns its configuration.
+
 Environment access stays in the configuration file, so the package works with `php artisan config:cache`.
 
 ## Error handling
@@ -182,7 +191,27 @@ $fake->assertSent(
 );
 ```
 
-Call `ViewMend::fake()` before resolving the service under test. The fake performs no network request; it verifies the SDK event sent by application code, not remote backend acceptance, authentication, or retry behavior.
+Call `ViewMend::fake()` before resolving the service under test. The fake performs no network request; it verifies the SDK request sent by application code, not remote backend acceptance, authentication, or retry behavior.
+
+For Cron, dashboard, and resource requests, queue the documented JSON response explicitly:
+
+```php
+use ViewMend\Laravel\Testing\RecordedRequest;
+
+$fake = ViewMend::fake()->respondNext(
+    ['error' => ['code' => 'registration_not_found']],
+    status: 404,
+);
+
+$registration = ViewMend::connection('cron')->cron()->current(); // null
+
+$fake->assertRequestSent(fn (RecordedRequest $request): bool =>
+    $request->connection === 'cron'
+    && $request->method === 'GET'
+    && $request->path === '/api/v1/cron/registration');
+```
+
+`respondNext()` accepts a decoded JSON object and a 2xx or non-retryable 4xx status; use `respondNext(status: 204)` for Cron disable. Responses are consumed in order across non-event requests and connections. Unconfigured requests fail immediately. `requests()` contains method, path, query, JSON payload, and connection, without headers or tokens. `assertNothingSent()` checks all requests. Existing event assertions and `duplicateNext()` / `failNext()` remain event-specific and use a separate response queue.
 
 ## Advanced usage
 

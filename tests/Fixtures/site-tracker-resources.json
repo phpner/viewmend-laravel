@@ -1,0 +1,29 @@
+{
+    "data": {
+        "run": {
+            "id": "123e4567-e89b-42d3-a456-426614174001",
+            "page_id": null,
+            "page_url": "https://example.com/",
+            "finished_at": null
+        },
+        "type": "other",
+        "device": "desktop",
+        "summary": {
+            "requests": 0,
+            "transferred_bytes": 0,
+            "stored_requests": 0,
+            "reported_requests": 0,
+            "truncated": false
+        },
+        "items": [],
+        "pagination": {
+            "page": 3,
+            "per_page": 300,
+            "total": 0,
+            "last_page": 1
+        }
+    },
+    "meta": {
+        "generated_at": "2026-09-04T17:30:00Z"
+    }
+}

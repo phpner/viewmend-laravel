@@ -1,6 +1,6 @@
 {
     "name": "viewmend/laravel",
-    "description": "Official Laravel SDK for ViewMend APIs, with framework integration and Site Tracker Events as the first module.",
+    "description": "Official Laravel integration for ViewMend APIs, including Site Tracker and Cron.",
     "homepage": "https://viewmend.com/",
     "license": "MIT",
     "type": "library",
@@ -24,7 +24,7 @@
         "illuminate/console": "^12.0 || ^13.0",
         "illuminate/contracts": "^12.0 || ^13.0",
         "illuminate/support": "^12.0 || ^13.0",
-        "viewmend/sdk": "^1.0"
+        "viewmend/sdk": "^1.3"
     },
     "require-dev": {
         "larastan/larastan": "^3.10",

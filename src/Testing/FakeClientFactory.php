@@ -22,6 +22,12 @@ final class FakeClientFactory implements ClientFactoryContract
     /** @var list<FakeResponse> */
     private array $responses = [];
 
+    /** @var list<RecordedRequest> */
+    private array $requests = [];
+
+    /** @var list<ResponseInterface> */
+    private array $apiResponses = [];
+
     private int $deliverySequence = 0;
 
     public function make(string $connection, #[\SensitiveParameter] string $token): ViewMend
@@ -47,6 +53,17 @@ final class FakeClientFactory implements ClientFactoryContract
         return $this->events;
     }
 
+    public function queueApiResponse(ResponseInterface $response): void
+    {
+        $this->apiResponses[] = $response;
+    }
+
+    /** @return list<RecordedRequest> */
+    public function requests(): array
+    {
+        return $this->requests;
+    }
+
     private function httpClient(string $connection): ClientInterface
     {
         return new class ($connection, $this) implements ClientInterface {
@@ -65,6 +82,21 @@ final class FakeClientFactory implements ClientFactoryContract
 
     public function handle(string $connection, RequestInterface $request): ResponseInterface
     {
+        $path = $request->getUri()->getPath();
+        $query = [];
+        parse_str($request->getUri()->getQuery(), $query);
+        $body = (string) $request->getBody();
+        $payload = $body === '' ? null : $this->decodePayload($body);
+        $this->requests[] = new RecordedRequest($connection, $request->getMethod(), $path, $query, $payload);
+
+        if (
+            $request->getMethod() !== 'POST'
+            || preg_match('~/site-tracker/integrations/[^/]+/events$~', $path) !== 1
+        ) {
+            return array_shift($this->apiResponses)
+                ?? throw new LogicException('Queue an API response with respondNext() before making this request.');
+        }
+
         $event = $this->record($connection, $request);
         $response = array_shift($this->responses) ?? FakeResponse::accepted();
 
@@ -97,24 +129,7 @@ final class FakeClientFactory implements ClientFactoryContract
             throw new LogicException('The ViewMend fake received an unsupported request path.');
         }
 
-        try {
-            $payload = json_decode((string) $request->getBody(), true, 512, JSON_THROW_ON_ERROR);
-        } catch (JsonException $exception) {
-            throw new LogicException('The ViewMend fake received invalid JSON.', 0, $exception);
-        }
-
-        if (!is_array($payload) || array_is_list($payload)) {
-            throw new LogicException('The ViewMend fake expected an event object.');
-        }
-
-        $object = [];
-        foreach ($payload as $key => $value) {
-            if (!is_string($key)) {
-                throw new LogicException('The ViewMend fake expected string event keys.');
-            }
-
-            $object[$key] = $value;
-        }
+        $object = $this->decodePayload((string) $request->getBody());
 
         $event = new RecordedEvent(
             connection: $connection,
@@ -133,6 +148,31 @@ final class FakeClientFactory implements ClientFactoryContract
         $this->events[] = $event;
 
         return $event;
+    }
+
+    /** @return array<string, mixed> */
+    private function decodePayload(string $body): array
+    {
+        try {
+            $payload = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
+            throw new LogicException('The ViewMend fake received invalid JSON.');
+        }
+
+        if (!is_array($payload) || array_is_list($payload)) {
+            throw new LogicException('The ViewMend fake expected a JSON object.');
+        }
+
+        $object = [];
+        foreach ($payload as $key => $value) {
+            if (!is_string($key)) {
+                throw new LogicException('The ViewMend fake expected string object keys.');
+            }
+
+            $object[$key] = $value;
+        }
+
+        return $object;
     }
 
     /** @param array<string, mixed> $payload */

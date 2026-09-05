@@ -2,7 +2,7 @@
 
 ## Package boundary
 
-`viewmend/laravel` is a Laravel adapter over `viewmend/sdk`. Authentication, HTTP transport, request mapping, safe retries, DTOs, API exceptions, and Site Tracker event builders remain owned by the SDK. The adapter uses only the SDK's public API and never imports `ViewMend\Internal` classes.
+`viewmend/laravel` is a Laravel adapter over `viewmend/sdk`. Authentication, HTTP transport, request mapping, safe retries, DTOs, API exceptions, Site Tracker event builders, dashboard/resource DTOs, and Cron registration/callback verification remain owned by the SDK. The adapter uses only the SDK's public API and never imports `ViewMend\Internal` classes.
 
 The package deliberately has no routes, controllers, views, migrations, frontend assets, incoming webhooks, global event listeners, HTTP client, or delivery queue.
 
@@ -10,11 +10,11 @@ The package deliberately has no routes, controllers, views, migrations, frontend
 
 `ViewMendServiceProvider` merges configuration during `register()`, registers singleton bindings, publishes configuration during `boot()`, and registers the deployment command only in console applications. None of those operations create an SDK client or perform I/O.
 
-`ViewMendManagerContract` is the container-facing API. `ViewMendManager` validates the selected connection and its token when it is requested, then caches a `ViewMendConnection` per name. The connection lazily creates one SDK `ViewMend` client on its first `client()` or successful module access. Calling an SDK event builder remains side-effect free until `send()`.
+`ViewMendManagerContract` is the container-facing API. `ViewMendManager` validates the selected connection and its token when it is requested, then caches a `ViewMendConnection` per name. The connection lazily creates one SDK `ViewMend` client on its first `client()` or successful module access. Calling an SDK event builder remains side-effect free until `send()`. `dashboard()`, `resources()`, and Cron `register()` / `current()` / `disable()` perform I/O immediately; `cron()` only returns the public SDK module client.
 
 Site Tracker configuration is a separate lazy concern. A connection resolves and validates `site_tracker.integration_id` only when `siteTrackerIntegrationId()` or `siteTracker()` is called. Token-only connections therefore remain valid shared ViewMend clients for other current or future public SDK modules. A missing or malformed Site Tracker block fails before constructing a Site Tracker client or performing I/O.
 
-The connection wrapper exists only to bind a configured Site Tracker integration ID to a named SDK client. From `siteTracker()` onward, callers receive the public SDK types `SiteTrackerClient`, `Events`, `PendingEvent`, and `DeliveryResult`; the adapter does not wrap the fluent event API.
+The connection wrapper binds a configured Site Tracker integration ID to a named SDK client and exposes the token-backed Cron module without reading Site Tracker configuration. From `siteTracker()` onward, callers receive the public SDK types `SiteTrackerClient`, its dashboard/resource responses, `Events`, `PendingEvent`, and `DeliveryResult`; the adapter does not wrap the fluent event API.
 
 ## Configuration
 
@@ -26,6 +26,7 @@ The supported structure is intentionally small:
     'connections' => [
         'default' => [
             'token' => '...',
+            'api_base_url' => null,
             'site_tracker' => [
                 'integration_id' => '...',
             ],
@@ -36,13 +37,13 @@ The supported structure is intentionally small:
 
 The connection token is required. The nested `site_tracker` block is optional for general `client()` access and required only for Site Tracker operations on that connection.
 
-The adapter does not expose an API base URL or retry options because its standard factory cannot honestly apply those settings through `ViewMend::client()`. Environment lookups exist only in `config/viewmend.php`, which makes the resolved array compatible with Laravel configuration caching.
+The optional per-connection `api_base_url` is read lazily by the default factory and passed to the public SDK factory introduced in SDK 1.2. Null uses the SDK production URL. URL syntax validation remains in the SDK. The existing two-argument `ClientFactoryContract::make()` remains unchanged; replacement factories own their configuration. Retry options remain owned by the SDK. Environment lookups exist only in `config/viewmend.php`, which makes the resolved array compatible with Laravel configuration caching.
 
 Connection names and tokens are validated when the connection is selected. Nested Site Tracker configuration and integration IDs are validated only at the Site Tracker boundary. Package exceptions identify only the relevant key and connection. Manager and connection debug output omit configuration, resolvers, tokens, client internals, and the integration ID value; SDK token objects provide their own redacted debug representation.
 
 ## Client factory extension point
 
-The default `ClientFactoryContract` implementation calls `ViewMend\ViewMend::client()` and retains all standard SDK transport behavior.
+The default `ClientFactoryContract` implementation calls `ViewMend\ViewMend::client($token, $baseUrl)` and retains all standard SDK transport behavior.
 
 An application that owns a PSR-18 stack can replace the binding in `AppServiceProvider::register()`:
 
@@ -65,6 +66,8 @@ When application code calls `send()`, the recorder extracts an allowlisted event
 
 Assertions occur after `send()`. Creating a builder alone records nothing. This seam tests which event application code attempted to deliver; it does not claim to test authentication, SDK retry policy, or ViewMend backend behavior.
 
+For non-event APIs, `respondNext()` queues explicit JSON responses consumed by the real SDK mapper. The fake never invents dashboard or registration state. Unqueued non-event requests throw immediately. A separate request history retains connection, method, path, parsed query, and JSON payload, excluding headers, tokens, and PSR request objects. Event response helpers use a separate queue. `assertNothingSent()` covers reads and mutations as well as events.
+
 The fake has immediate accepted and duplicate results. `failNext()` accepts only non-retryable 4xx statuses so tests never trigger SDK sleeps or accidentally turn a queued failure into a later success.
 
 ## Deployment command and queue decision
@@ -77,7 +80,7 @@ No Laravel queue layer is included. The SDK already performs bounded retries for
 
 Production dependencies are limited to:
 
-- `viewmend/sdk` for all ViewMend API behavior;
+- `viewmend/sdk ^1.3` for all ViewMend API behavior;
 - `illuminate/contracts`, `illuminate/support`, and `illuminate/console` for the container, provider/facade, and command integration;
 - `guzzlehttp/psr7`, already present in the SDK transport graph, as the declared PSR-17/PSR-7 implementation used by the public testing fake.
 
@@ -86,3 +89,7 @@ The package does not require `laravel/framework` in production. Testbench suppli
 ## Possible SDK enhancement
 
 No SDK change is required for this package. A future backward-compatible public event observation or immutable snapshot seam could let framework adapters record a pre-delivery event without decoding the documented wire payload. That seam should not expose the SDK's current internal transport or event objects.
+
+## SDK version compatibility
+
+The minimum SDK is 1.3, which includes the neutral Cron contract, configurable base URL, and Site Tracker dashboard/resource reads. All module tests run against the published dependency. The Composer lock and consumer smoke use published SDK releases.

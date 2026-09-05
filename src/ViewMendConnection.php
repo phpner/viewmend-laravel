@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace ViewMend\Laravel;
 
 use Closure;
+use ViewMend\Cron\CronClient;
 use ViewMend\SiteTracker\SiteTrackerClient;
 use ViewMend\ViewMend;
 
@@ -45,6 +46,11 @@ final class ViewMendConnection
         $integrationId = $this->siteTrackerIntegrationId();
 
         return $this->client()->siteTracker($integrationId);
+    }
+
+    public function cron(): CronClient
+    {
+        return $this->client()->cron();
     }
 
     /** @return array{name: string, client: string, siteTrackerIntegrationId: string} */

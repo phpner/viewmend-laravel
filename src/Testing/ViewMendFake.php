@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace ViewMend\Laravel\Testing;
 
 use AssertionError;
+use GuzzleHttp\Psr7\Response;
+use ViewMend\Cron\CronClient;
 use ViewMend\Laravel\Contracts\ViewMendManagerContract;
 use ViewMend\Laravel\ViewMendConnection;
 use ViewMend\Laravel\ViewMendManager;
@@ -36,6 +38,45 @@ final class ViewMendFake implements ViewMendManagerContract
     public function client(): ViewMend
     {
         return $this->manager->client();
+    }
+
+    public function cron(): CronClient
+    {
+        return $this->manager->cron();
+    }
+
+    /** @param array<string, mixed>|null $body */
+    public function respondNext(?array $body = null, int $status = 200): self
+    {
+        if ($status < 200 || $status >= 500 || $status === 429 || ($status >= 300 && $status < 400)) {
+            throw new \InvalidArgumentException('An API fake response must use a 2xx or non-retryable 4xx status.');
+        }
+
+        $this->factory->queueApiResponse(new Response(
+            $status,
+            ['Content-Type' => 'application/json'],
+            $body === null ? '' : json_encode($body, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES),
+        ));
+
+        return $this;
+    }
+
+    /** @return list<RecordedRequest> */
+    public function requests(): array
+    {
+        return $this->factory->requests();
+    }
+
+    /** @param callable(RecordedRequest): bool $callback */
+    public function assertRequestSent(callable $callback): void
+    {
+        foreach ($this->requests() as $request) {
+            if ($callback($request)) {
+                return;
+            }
+        }
+
+        throw new AssertionError('No matching ViewMend API request was sent.');
     }
 
     public function duplicateNext(string $queueStatus = 'queued'): self
@@ -87,8 +128,8 @@ final class ViewMendFake implements ViewMendManagerContract
 
     public function assertNothingSent(): void
     {
-        if ($this->events() !== []) {
-            throw new AssertionError('Unexpected ViewMend events were sent.');
+        if ($this->requests() !== []) {
+            throw new AssertionError('Unexpected ViewMend requests were sent.');
         }
     }
 }

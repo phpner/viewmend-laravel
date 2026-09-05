@@ -8,6 +8,7 @@ return [
     'connections' => [
         'default' => [
             'token' => env('VIEWMEND_API_TOKEN'),
+            'api_base_url' => env('VIEWMEND_API_BASE_URL'),
 
             'site_tracker' => [
                 'integration_id' => env('VIEWMEND_SITE_TRACKER_INTEGRATION_ID'),

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "3680e28ca0fdbaeda549c4684fd75c91",
+    "content-hash": "c13429073833ceb211c6411a9b5a14dc",
     "packages": [
         {
             "name": "brick/math",
@@ -5638,16 +5638,16 @@
         },
         {
             "name": "viewmend/sdk",
-            "version": "v1.0.0",
+            "version": "v1.3.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpner/viewmend-php.git",
-                "reference": "5e6c07d15da7a54115a8a7c0e75593e1a855774a"
+                "reference": "0dbfadc9f8ec9d06abee83d07943518f6131225e"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpner/viewmend-php/zipball/5e6c07d15da7a54115a8a7c0e75593e1a855774a",
-                "reference": "5e6c07d15da7a54115a8a7c0e75593e1a855774a",
+                "url": "https://api.github.com/repos/phpner/viewmend-php/zipball/0dbfadc9f8ec9d06abee83d07943518f6131225e",
+                "reference": "0dbfadc9f8ec9d06abee83d07943518f6131225e",
                 "shasum": ""
             },
             "require": {
@@ -5674,13 +5674,15 @@
             "license": [
                 "MIT"
             ],
-            "description": "Official framework-agnostic PHP SDK for ViewMend APIs, including Site Tracker website change events.",
+            "description": "Official framework-agnostic PHP SDK for ViewMend APIs, including Site Tracker events and Cron.",
             "homepage": "https://viewmend.com/",
             "keywords": [
                 "API-Client",
                 "change-monitoring",
+                "cron",
                 "deployment-monitoring",
                 "php-sdk",
+                "scheduled-tasks",
                 "site-tracker",
                 "viewmend",
                 "website-monitoring"
@@ -5690,7 +5692,7 @@
                 "issues": "https://github.com/phpner/viewmend-php/issues",
                 "source": "https://github.com/phpner/viewmend-php"
             },
-            "time": "2026-08-16T16:15:07+00:00"
+            "time": "2026-09-05T08:14:37+00:00"
         },
         {
             "name": "vlucas/phpdotenv",

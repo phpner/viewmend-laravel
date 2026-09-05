@@ -24,6 +24,7 @@ cleanup() {
 trap cleanup EXIT
 
 cp -R "${fixture_dir}/." "${consumer_dir}/"
+cp "${package_root}/tests/Fixtures/"site-tracker-*.json "${consumer_dir}/"
 mkdir -p \
     "${consumer_dir}/bootstrap/cache" \
     "${consumer_dir}/storage/framework/cache/data" \
@@ -41,6 +42,7 @@ COMPOSER_MIRROR_PATH_REPOS=1 composer --working-dir="${consumer_dir}" update \
 php "${consumer_dir}/artisan" package:discover --no-interaction
 
 VIEWMEND_API_TOKEN=consumer-smoke-placeholder \
+VIEWMEND_API_BASE_URL=http://127.0.0.1:8079/api/v1 \
 VIEWMEND_SITE_TRACKER_INTEGRATION_ID=consumer-smoke-integration \
     php "${consumer_dir}/artisan" config:cache --no-interaction
 

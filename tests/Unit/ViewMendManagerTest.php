@@ -16,6 +16,20 @@ use ViewMend\Laravel\ViewMendManager;
 
 final class ViewMendManagerTest extends TestCase
 {
+    public function testCronReusesTheCachedClientAndDoesNotResolveSiteTrackerConfiguration(): void
+    {
+        $factory = new CountingClientFactory();
+        $manager = new ViewMendManager(self::tokenOnlyConfig(), $factory);
+
+        $manager->cron();
+        $manager->connection()->cron();
+        $manager->client();
+        $manager->connection('secondary')->cron();
+
+        self::assertSame(['default', 'secondary'], $factory->connections);
+        self::assertSame(0, $factory->http->requests);
+    }
+
     public function testTokenOnlyDefaultConnectionCanReturnACachedSdkClient(): void
     {
         $factory = new CountingClientFactory();

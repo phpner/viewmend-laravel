@@ -1,0 +1,48 @@
+{
+    "data": {
+        "site": {
+            "group_id": "123e4567-e89b-42d3-a456-426614174002",
+            "name": "Example site"
+        },
+        "scope": {
+            "device": "mobile",
+            "page": null,
+            "available_pages": []
+        },
+        "summary": {
+            "health_score": null,
+            "health_score_delta": null,
+            "tracked_pages": 0,
+            "checked_pages": 0,
+            "open_issues": 0,
+            "critical_issues": 0
+        },
+        "latest_check": null,
+        "links": [],
+        "needs_attention": {
+            "total": 0,
+            "items": []
+        },
+        "issue_trend": [],
+        "transfer": {
+            "available": false,
+            "run_id": null,
+            "total_bytes": null,
+            "reported_requests": null,
+            "stored_requests": 0,
+            "truncated": false,
+            "unattributed_bytes": 0,
+            "source": null,
+            "resource_endpoint": null,
+            "categories": []
+        },
+        "resource_changes": {
+            "available": false,
+            "items": []
+        },
+        "performance_history": []
+    },
+    "meta": {
+        "generated_at": "2026-09-04T17:30:00+00:00"
+    }
+}
