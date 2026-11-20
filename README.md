@@ -2,6 +2,8 @@
 
 The official Laravel SDK for the [ViewMend website monitoring platform](https://viewmend.com/). This package adapts the framework-agnostic [`viewmend/sdk`](https://packagist.org/packages/viewmend/sdk) to Laravel with container bindings, named connections, a facade, an Artisan command, and a network-free testing fake.
 
+ViewMend also offers free one-page checks that need no integration: the [website SEO checker](https://viewmend.com/seo-checker) reviews indexability, titles, descriptions, headings and structured data, and the [website spell checker](https://viewmend.com/page-text-review) finds spelling and grammar errors in published page text.
+
 ## Available modules
 
 ### Site Tracker
